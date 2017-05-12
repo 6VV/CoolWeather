@@ -6,6 +6,9 @@ import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.os.Build;
 import android.preference.PreferenceManager;
+import android.support.v4.view.GravityCompat;
+import android.support.v4.widget.DrawerLayout;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -48,11 +51,21 @@ public class WeatherActivity extends AppCompatActivity {
     private TextView mSportText;
 
     private ImageView mBackgroundView;
+    private SwipeRefreshLayout mSwipeRefreshLayout;
+    private DrawerLayout mDrawerLayout;
+
+    private String mWeatherId;
 
     public static void actionStart(Context context,String weatherId){
         Intent intent=new Intent(context,WeatherActivity.class);
         intent.putExtra(WEATHER_ID,weatherId);
         context.startActivity(intent);
+    }
+
+    public void drawerLayoutRefresh(){
+        mDrawerLayout.closeDrawers();
+        mSwipeRefreshLayout.setRefreshing(true);
+        requestWeather(mWeatherId);
     }
 
     @Override
@@ -79,24 +92,40 @@ public class WeatherActivity extends AppCompatActivity {
         mCarWashText = (TextView) findViewById(R.id.car_wash_text_view);
         mSportText = (TextView) findViewById(R.id.sport_text_view);
         mBackgroundView= (ImageView) findViewById(R.id.background_view);
+        mSwipeRefreshLayout= (SwipeRefreshLayout) findViewById(R.id.swipe_refresh_layout);
+        mSwipeRefreshLayout.setColorSchemeResources(R.color.colorPrimary);
+        mDrawerLayout= (DrawerLayout) findViewById(R.id.drawer_layout);
 
         SharedPreferences preferences= PreferenceManager.getDefaultSharedPreferences(this);
         String weatherString=preferences.getString("weather",null);
-        String weatherId=getIntent().getStringExtra(WEATHER_ID);
+        mWeatherId=getIntent().getStringExtra(WEATHER_ID);
         if (weatherString!=null){
             Log.d(TAG, "file text: "+weatherString);
             Weather weather= Utility.handleWeatherResponse(weatherString);
-            if (weather.basic.weatherId.equals(weatherId)){
+            if (weather.basic.weatherId.equals(mWeatherId)){
                 showWeatherInfo(weather);
             }else{
                 mWeatherLayout.setVisibility(View.INVISIBLE);
-                requestWeather(weatherId);
+                requestWeather(mWeatherId);
             }
         }else{
             mWeatherLayout.setVisibility(View.INVISIBLE);
-            requestWeather(weatherId);
+            requestWeather(mWeatherId);
         }
 
+        findViewById(R.id.nav_button).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                mDrawerLayout.openDrawer(GravityCompat.START);
+            }
+        });
+
+        mSwipeRefreshLayout.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                requestWeather(mWeatherId);
+            }
+        });
         loadBingPic();
     }
 
@@ -123,8 +152,8 @@ public class WeatherActivity extends AppCompatActivity {
     }
 
     private void requestWeather(String weatherId) {
-//        String weatherUrl = "http://guolin.tech/api/weather?cityid=" + weatherId + "&key=bc0418b57b2d4918819d3974ac1285d9";
-        String weatherUrl="https://free-api.heweather.com/v5/weather?city="+weatherId+"&key="+"9a227f91fff347dbbd2cf1a60ee0e2c0";
+        String weatherUrl = "http://guolin.tech/api/weather?cityid=" + weatherId + "&key=bc0418b57b2d4918819d3974ac1285d9";
+//        String weatherUrl="https://free-api.heweather.com/v5/weather?city="+weatherId+"&key="+"9a227f91fff347dbbd2cf1a60ee0e2c0";
         HttpUtil.sendOkHttpRequest(weatherUrl, new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
@@ -133,6 +162,7 @@ public class WeatherActivity extends AppCompatActivity {
                     public void run() {
                         Log.d(TAG, "request failed");
                         Toast.makeText(WeatherActivity.this,"获取天气信息失败",Toast.LENGTH_LONG).show();
+                        mSwipeRefreshLayout.setRefreshing(false);
                     }
                 });
             }
@@ -153,6 +183,7 @@ public class WeatherActivity extends AppCompatActivity {
                         }else{
                             Toast.makeText(WeatherActivity.this,"获取天气信息失败",Toast.LENGTH_LONG).show();
                         }
+                        mSwipeRefreshLayout.setRefreshing(false);
                     }
                 });
             }
