@@ -152,8 +152,7 @@ public class WeatherActivity extends AppCompatActivity {
     }
 
     private void requestWeather(String weatherId) {
-        String weatherUrl = "http://guolin.tech/api/weather?cityid=" + weatherId + "&key=bc0418b57b2d4918819d3974ac1285d9";
-//        String weatherUrl="https://free-api.heweather.com/v5/weather?city="+weatherId+"&key="+"9a227f91fff347dbbd2cf1a60ee0e2c0";
+        String weatherUrl = HttpUtil.getWeatherUrl(weatherId);
         HttpUtil.sendOkHttpRequest(weatherUrl, new Callback() {
             @Override
             public void onFailure(Call call, IOException e) {
@@ -191,6 +190,11 @@ public class WeatherActivity extends AppCompatActivity {
     }
 
     private void showWeatherInfo(Weather weather) {
+        if (weather==null || !weather.status.equals("ok")){
+            Toast.makeText(this,"获取天气信息失败",Toast.LENGTH_LONG).show();
+            return;
+        }
+
         String cityName=weather.basic.cityName;
         String updateTime=weather.basic.update.updateTime;
         String degree=weather.now.temperature+"°C";
@@ -226,5 +230,8 @@ public class WeatherActivity extends AppCompatActivity {
         mCarWashText.setText(carWash);
         mSportText.setText(sport);
         mWeatherLayout.setVisibility(View.VISIBLE);
+
+        Intent intent=new Intent(this,AutoUpdateService.class);
+        startService(intent);
     }
 }

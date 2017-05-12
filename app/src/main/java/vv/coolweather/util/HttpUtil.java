@@ -13,4 +13,13 @@ public class HttpUtil {
         Request request=new Request.Builder().url(address).build();
         client.newCall(request).enqueue(callback);
     }
+
+    public static String getWeatherUrl(String weatherId){
+        return "http://guolin.tech/api/weather?cityid=" + weatherId + "&key=bc0418b57b2d4918819d3974ac1285d9";
+//        return  "https://free-api.heweather.com/v5/weather?city="+weatherId+"&key="+"9a227f91fff347dbbd2cf1a60ee0e2c0";
+    }
+
+    public static String weatherResponseHeader(){
+        return "HeWeather";
+    }
 }
